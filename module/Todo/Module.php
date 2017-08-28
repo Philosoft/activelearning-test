@@ -45,7 +45,7 @@ class Module implements ConfigProviderInterface, AutoloaderProviderInterface
         $exception = $e->getParam('exception');
 
         $model = new JsonModel([
-            "error" => $exception->getMessage()
+            "error" => $exception instanceof \Exception ? $exception->getMessage() : $error
         ]);
 
         $e->setResult($model);

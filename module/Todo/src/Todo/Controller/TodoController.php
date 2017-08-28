@@ -30,7 +30,7 @@ class TodoController extends AbstractRestfulController
     protected $entityManager = null;
     protected $authToken = null;
     protected $user = null;
-    protected $hydrator;
+    protected $hydrator = null;
 
     public function __construct(EntityManager $entityManager, HydratorInterface $hydrator) {
         $this->entityManager = $entityManager;
@@ -58,7 +58,7 @@ class TodoController extends AbstractRestfulController
             return false;
         }
 
-        $this->user = $this->entityManager->getRepository("Todo\Entity\User")
+        $this->user = $this->entityManager->getRepository("Todo\\Entity\\User")
             ->findOneBy([User::FIELD_NAME__AUTH_TOKEN => $token]);
 
         return $this->user !== null;
@@ -69,8 +69,7 @@ class TodoController extends AbstractRestfulController
         /** @var Task $task */
         $task = $this->entityManager->find("Todo\\Entity\\Task", $id);
         if ($task !== null && $task->checkAuthToken($this->authToken)) {
-            $data = $this->hydrator->extract($task);
-            return new JsonModel($data);
+            return new JsonModel($task->getDataAsArray());
         } else {
             return new JsonModel(["error" => "task with id {$id} not exists or u doesn't have sufficient rights"]);
         }
@@ -79,6 +78,9 @@ class TodoController extends AbstractRestfulController
     public function create($data)
     {
         $data["user"] = $this->user;
+        if (!isset($data["created_at"])) {
+            $data["created_at"] = "now";
+        }
         $task = new Task();
         $this->hydrator->hydrate($data, $task);
 
@@ -119,9 +121,8 @@ class TodoController extends AbstractRestfulController
         /** @var Task $task */
         $task = $this->entityManager->find("Todo\\Entity\\Task", $id);
         if ($task !== null && $task->checkAuthToken($this->authToken)) {
-
-
             $updateStatus = self::MESSAGE_SUCCESS;
+            $this->hydrator->hydrate($data, $task);
             try {
                 $this->entityManager->persist($task);
                 $this->entityManager->flush();
@@ -135,6 +136,10 @@ class TodoController extends AbstractRestfulController
         }
     }
 
+    /**
+     * Return all tasks for user as json
+     * @return JsonModel
+     */
     public function getList()
     {
         $taskCollection = $this->entityManager->getRepository("Todo\\Entity\\Task")

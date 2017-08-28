@@ -99,12 +99,12 @@ class Task
     }
 
     /**
-     * @param string $created_at
+     * @param \DateTime $created_at
      * @return $this
      */
-    public function setCreatedAt($created_at = "now")
+    public function setCreatedAt(\DateTime $created_at)
     {
-        $this->created_at = new \DateTime($created_at);
+        $this->created_at = $created_at;
         return $this;
     }
 
